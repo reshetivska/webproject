@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Обробка зображень — розподілена система</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Розподілена обробка зображень</h1>
+    <div id="userbox" hidden>
+      <span id="username"></span>
+      <button id="logout-btn" class="secondary">Вийти</button>
+    </div>
+  </header>
+
+  <main>
+
+    <section id="auth-section" class="card narrow">
+      <div class="tabs">
+        <button type="button" id="tab-login" class="active">Вхід</button>
+        <button type="button" id="tab-register">Реєстрація</button>
+      </div>
+      <form id="auth-form">
+        <label>Логін
+          <input id="auth-username" autocomplete="username" required minlength="3" maxlength="30">
+        </label>
+        <label>Пароль
+          <input id="auth-password" type="password" autocomplete="current-password" required minlength="6">
+        </label>
+        <button type="submit" id="auth-submit">Увійти</button>
+        <p class="error" id="auth-error"></p>
+      </form>
+    </section>
+
+
+    <div id="app-section" hidden>
+      <div class="tabs main-tabs">
+        <button type="button" data-view="tasks" class="active">Мої задачі</button>
+        <button type="button" data-view="admin" id="admin-tab" hidden>Адмін-панель</button>
+      </div>
+
+      <div id="view-tasks">
+        <section class="card">
+          <h2>Нова задача</h2>
+          <form id="task-form">
+            <div class="row">
+              <label>Зображення (PNG або JPEG)
+                <input type="file" id="file" accept="image/png,image/jpeg" required>
+              </label>
+              <label>Фільтр
+                <select id="filter">
+                  <option value="blur">Розмиття (Гаусс)</option>
+                  <option value="sharpen">Різкість</option>
+                </select>
+              </label>
+              <label>Радіус ядра: <b id="radius-value">5</b>
+                <input type="range" id="radius" min="1" max="15" value="5">
+              </label>
+            </div>
+            <p id="complexity-info" class="hint">Оберіть файл, щоб побачити трудомісткість.</p>
+            <button type="submit" id="submit-task">Запустити обробку</button>
+            <p class="error" id="task-error"></p>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Історія задач</h2>
+          <p class="hint" id="limits-info"></p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Параметри</th><th>Стан</th><th>Воркери</th><th>Час</th><th></th></tr>
+              </thead>
+              <tbody id="tasks-body"></tbody>
+            </table>
+          </div>
+          <p id="empty-tasks" class="hint" hidden>Задач поки немає. Завантажте зображення вище.</p>
+        </section>
+
+        <section class="card" id="result-section" hidden>
+          <h2>Результат</h2>
+          <div class="compare">
+            <figure><figcaption>Оригінал</figcaption><img id="img-original" alt="Оригінал"></figure>
+            <figure><figcaption>Після обробки</figcaption><img id="img-result" alt="Результат"></figure>
+          </div>
+          <a id="download-link" download="result.png"><button type="button" class="secondary">Завантажити результат</button></a>
+        </section>
+      </div>
+
+      <div id="view-admin" hidden>
+        <section class="card">
+          <h2>Система</h2>
+          <div class="stats" id="admin-stats"></div>
+        </section>
+        <section class="card">
+          <h2>Автомасштабування</h2>
+          <p class="hint" id="autoscaler-off">Автоскейлер не запущено: кількість воркерів фіксована.</p>
+          <div class="stats" id="autoscaler-stats" hidden></div>
+          <p class="hint" id="autoscaler-last"></p>
+        </section>
+        <section class="card">
+          <h2>Воркери</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Воркер</th><th>Слоти (зайнято / усього)</th><th>Смуг пораховано</th></tr></thead>
+              <tbody id="admin-workers"></tbody>
+            </table>
+          </div>
+          <p id="admin-no-workers" class="error" hidden>Жодного активного воркера. Запустіть воркери.</p>
+        </section>
+        <section class="card">
+          <h2>Активні задачі</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Користувач</th><th>Параметри</th><th>Стан</th><th>Воркери</th></tr></thead>
+              <tbody id="admin-tasks"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer>Запит обслужив API-сервер: <b id="served-by">—</b></footer>
+  <script src="app.js"></script>
+</body>
+</html>

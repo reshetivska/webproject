@@ -1,0 +1,17 @@
+services:
+  autoscaler:
+    profiles: ["autoscale"]
+    build: ./backend
+    command: python -m app.autoscaler
+    environment:
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      AUTOSCALE_MIN_WORKERS: ${AUTOSCALE_MIN_WORKERS:-2}
+      AUTOSCALE_MAX_WORKERS: ${AUTOSCALE_MAX_WORKERS:-4}
+      AUTOSCALE_IDLE_SEC: ${AUTOSCALE_IDLE_SEC:-30}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    stop_grace_period: 40s
+    depends_on:
+      redis:
+        condition: service_healthy
