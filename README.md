@@ -21,18 +21,51 @@ docker-compose.autoscale.yml   автомасштабування
 
 ## Архітектура
 
-```
-                    ┌────────────── ГОЛОВНИЙ ВУЗОЛ ──────────────┐
- Браузер ─HTTPS──►  │ Nginx (least_conn)                          │
-                    │   ├─► api1 (FastAPI)  ─┐                    │
-                    │   └─► api2 (FastAPI)  ─┼─► PostgreSQL       │
-                    │                        └─► Redis (черга)    │
-                    └─────────────────────────────▲───────────────┘
-                                                  │ по мережі
-                         ┌────────────────────────┼──────────────────┐
-                         │                        │                  │
-                  Комп'ютер 1              Комп'ютер 2        Комп'ютер N ...
-                  Celery-воркер            Celery-воркер      Celery-воркер
+```mermaid
+flowchart TB
+    Client_Browser["Client_Browser"]
+    Nginx_TLS["Nginx_TLS<br/>HTTPS :8443, least_conn"]
+
+    Client_Browser <-->|"HTTPS"| Nginx_TLS
+
+    subgraph API_Servers["API_Servers (FastAPI)"]
+        API_1["api1 :8000"]
+        API_2["api2 :8000"]
+    end
+
+    Nginx_TLS <-->|"API"| API_1
+    Nginx_TLS <-->|"API"| API_2
+
+    Postgres[("PostgreSQL<br/>users, tokens, tasks")]
+    Redis[("Redis<br/>queue, progress, cancel flags")]
+
+    API_1 -->|"History"| Postgres
+    API_2 -->|"History"| Postgres
+    API_1 -->|"Task strips"| Redis
+    API_2 -->|"Task strips"| Redis
+
+    subgraph Workers["Celery_Workers (different computers)"]
+        W_1["worker1 / auto-1"]
+        W_2["worker2 / auto-2"]
+        W_N["auto-3, auto-4 (on load)"]
+    end
+
+    Redis -->|"Strips"| W_1
+    Redis -->|"Strips"| W_2
+    Redis -->|"Strips"| W_N
+    W_1 -->|"Result"| Postgres
+    W_2 -->|"Result"| Postgres
+    W_N -->|"Result"| Postgres
+    W_1 -.->|"Progress, heartbeat"| Redis
+    W_2 -.->|"Progress, heartbeat"| Redis
+    W_N -.->|"Progress, heartbeat"| Redis
+
+    Autoscaler["Autoscaler<br/>min 2, max 4 workers"]
+    Docker_Engine["Docker_Engine"]
+
+    Autoscaler -->|"Queue, busy workers"| Redis
+    Autoscaler -->|"Start / stop"| Docker_Engine
+    Docker_Engine -->|"Containers"| W_N
 ```
 
 Два рівні балансування:
